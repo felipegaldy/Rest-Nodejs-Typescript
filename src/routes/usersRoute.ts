@@ -2,38 +2,50 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { appendFile } from 'fs';
 import { StatusCodes } from 'http-status-codes';
+import userRepository from '../repositories/userRepository';
 
 const  usersRoute = Router();
 
 
-usersRoute.get('/users', (req: Request, res: Response, next: NextFunction) => {
-    const users = [{userName: 'Felipe'}];
+usersRoute.get('/users', async (req: Request, res: Response, next: NextFunction) => {
+    const users = await userRepository.findAllUsers();
     res.status(StatusCodes.OK).send(users);
 });
 
 
-usersRoute.get('/users/:uuid', (req: Request<{ uuid: string}>, res: Response, next: NextFunction) => {
+usersRoute.get('/users/:uuid', async (req: Request<{ uuid: string}>, res: Response, next: NextFunction) => {
+    try {
+
     const uuid = req.params.uuid;
-    res.status(StatusCodes.OK).send({ uuid });
+    const user = await userRepository.findById(uuid);
+    res.status(StatusCodes.OK).send(user);
+    } catch (error) {
+        next(error);
+    }
 });
 
-usersRoute.post('/users', (req: Request, res: Response, next: NextFunction) => {
+usersRoute.post('/users', async  (req: Request, res: Response, next: NextFunction) => {
         const newUser = req.body
-        res.status(StatusCodes.CREATED).send(newUser)
+        const uuid = await userRepository.create(newUser)
+        res.status(StatusCodes.CREATED).send(uuid)
 });
 
-usersRoute.put('/users/:uuid', (req: Request<{ uuid: string}>, res: Response, next: NextFunction) => {
+usersRoute.put('/users/:uuid', async (req: Request<{ uuid: string}>, res: Response, next: NextFunction) => {
     const uuid = req.params.uuid;
     const modifiedUser = req.body;
 
     modifiedUser.uuid = uuid;
 
+    await userRepository.update(modifiedUser)
+
     res.status(StatusCodes.OK).send({ uuid });
 });
 
-usersRoute.delete('/users/:uuid', (req: Request<{ uuid: string}>, res: Response, next: NextFunction) => {
-
+usersRoute.delete('/users/:uuid', async (req: Request<{ uuid: string}>, res: Response, next: NextFunction) => {
+    const uuid = req.params.uuid
+    await userRepository.remove(uuid)
     res.status(StatusCodes.OK);
+    
 });
 
 export default usersRoute;
